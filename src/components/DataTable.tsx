@@ -47,7 +47,7 @@ export default function DataTable({ data, allData }: DataTableProps) {
   };
 
   const exportCSV = () => {
-    const headers = ["Paciente","Entrada","Saída","Status","Cidade","Tipo Internação","Tipo Alta","CID","Menor","Permanência (dias)","Reinternação"];
+    const headers = ["Paciente", "Entrada", "Saída", "Status", "Cidade", "Tipo Internação", "Tipo Alta", "CID", "Menor", "Permanência (dias)", "Reinternação"];
     const rows = filtered.map(r => [r.paciente, r.dataEntradaStr, r.dataSaidaStr, r.statusInternacao, r.cidadeFinal, r.tipoInternacao, r.tipoAlta, r.cid, r.menorIdade, r.permanenciaDias, r.reinternacao ? "Sim" : "Não"]);
     const csv = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(",")).join("\n");
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });

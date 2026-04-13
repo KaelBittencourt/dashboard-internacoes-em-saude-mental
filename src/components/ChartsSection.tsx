@@ -1,6 +1,6 @@
 import { ProcessedRecord } from "@/lib/types";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, LineChart, Line, Area, AreaChart, RadialBarChart, RadialBar, Legend,
 } from "recharts";
 
@@ -47,13 +47,13 @@ function sortByMonth(data: { name: string; value: number }[]) {
 function CustomTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-foreground/90 backdrop-blur-sm text-primary-foreground rounded-lg px-4 py-2.5 shadow-xl border-0 text-xs">
-      <p className="font-semibold mb-1 opacity-80">{label}</p>
+    <div className="bg-gray-900 dark:bg-gray-800 backdrop-blur-sm text-white rounded-lg px-4 py-2.5 shadow-xl border border-white/10 text-xs">
+      <p className="font-semibold mb-1 text-gray-300">{label}</p>
       {payload.map((p: any, i: number) => (
         <div key={i} className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full" style={{ background: p.color }} />
-          <span className="opacity-80">{p.name}:</span>
-          <span className="font-bold">{p.value}</span>
+          <span className="text-gray-300">{p.name}:</span>
+          <span className="font-bold text-white">{p.value}</span>
         </div>
       ))}
     </div>
@@ -64,12 +64,12 @@ function PieTooltip({ active, payload }: any) {
   if (!active || !payload?.length) return null;
   const d = payload[0];
   return (
-    <div className="bg-foreground/90 backdrop-blur-sm text-primary-foreground rounded-lg px-4 py-2.5 shadow-xl text-xs">
+    <div className="bg-gray-900 dark:bg-gray-800 backdrop-blur-sm text-white rounded-lg px-4 py-2.5 shadow-xl border border-white/10 text-xs">
       <div className="flex items-center gap-2">
         <span className="w-2.5 h-2.5 rounded-full" style={{ background: d.payload.fill }} />
-        <span className="font-semibold">{d.name}</span>
+        <span className="font-semibold text-white">{d.name}</span>
       </div>
-      <p className="mt-1"><span className="font-bold text-sm">{d.value}</span> <span className="opacity-70">({((d.payload.percent || 0) * 100).toFixed(1)}%)</span></p>
+      <p className="mt-1"><span className="font-bold text-sm text-white">{d.value}</span> <span className="text-gray-400">({((d.payload.percent || 0) * 100).toFixed(1)}%)</span></p>
     </div>
   );
 }
@@ -79,28 +79,34 @@ function DonutCenter({ data, label }: { data: { name: string; value: number }[];
   const total = data.reduce((s, d) => s + d.value, 0);
   return (
     <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle">
-      <tspan x="50%" dy="-8" className="fill-foreground text-2xl font-bold">{total}</tspan>
-      <tspan x="50%" dy="20" className="fill-muted-foreground text-[10px]">{label}</tspan>
+      <tspan x="50%" dy="-8" style={{ fill: "hsl(var(--foreground))", fontSize: 24, fontWeight: 700 }}>{total}</tspan>
+      <tspan x="50%" dy="20" style={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}>{label}</tspan>
     </text>
   );
 }
 
-function ChartCard({ title, subtitle, children, className = "" }: { title: string; subtitle?: string; children: React.ReactNode; className?: string }) {
+function ChartCard({ title, subtitle, children, className = "", heightClass = "h-72" }: { title: string; subtitle?: string; children: React.ReactNode; className?: string; heightClass?: string }) {
   return (
-    <div className={`bg-card rounded-2xl border border-border/60 p-6 shadow-sm hover:shadow-md transition-all duration-300 animate-fade-in ${className}`}>
+    <div className={`bg-card/80 backdrop-blur-xl rounded-2xl border border-white/5 p-6 shadow-card hover:shadow-glow transition-all duration-300 animate-fade-in ${className}`}>
       <div className="mb-5">
         <h3 className="text-sm font-semibold text-foreground tracking-tight">{title}</h3>
         {subtitle && <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>}
       </div>
-      <div className="h-72">{children}</div>
+      <div className={heightClass}>{children}</div>
     </div>
   );
 }
 
-const gridStroke = "hsl(214 20% 92%)";
-const axisStyle = { fontSize: 11, fill: "hsl(215 10% 50%)" };
+function useChartTheme() {
+  const isDark = typeof document !== "undefined" && document.documentElement.classList.contains("dark");
+  return {
+    gridStroke: isDark ? "hsl(220 15% 20%)" : "hsl(214 20% 92%)",
+    axisStyle: { fontSize: 11, fill: isDark ? "hsl(215 15% 60%)" : "hsl(215 10% 50%)" },
+  };
+}
 
 export default function ChartsSection({ data }: ChartsProps) {
+  const { gridStroke, axisStyle } = useChartTheme();
   const entrMensal = sortByMonth(countBy(data, (d) => d.mesEntrada));
   const altasMensal = sortByMonth(countBy(data.filter(d => d.statusInternacao === "Encerrada"), (d) => d.mesSaida));
 
@@ -151,10 +157,10 @@ export default function ChartsSection({ data }: ChartsProps) {
                 <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.02} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
+
             <XAxis dataKey="name" tick={axisStyle} axisLine={false} tickLine={false} />
             <YAxis tick={axisStyle} axisLine={false} tickLine={false} />
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip content={<CustomTooltip />} cursor={{ fill: "hsl(var(--muted) / 0.4)" }} />
             <Area type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={2.5} fill="url(#gradBlue)" name="Internações" dot={{ r: 4, fill: "#3b82f6", stroke: "#fff", strokeWidth: 2 }} activeDot={{ r: 6, stroke: "#3b82f6", strokeWidth: 2, fill: "#fff" }} />
           </AreaChart>
         </ResponsiveContainer>
@@ -170,10 +176,10 @@ export default function ChartsSection({ data }: ChartsProps) {
                 <stop offset="100%" stopColor="#10b981" stopOpacity={0.02} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
+
             <XAxis dataKey="name" tick={axisStyle} axisLine={false} tickLine={false} />
             <YAxis tick={axisStyle} axisLine={false} tickLine={false} />
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip content={<CustomTooltip />} cursor={{ fill: "hsl(var(--muted) / 0.4)" }} />
             <Area type="monotone" dataKey="value" stroke="#10b981" strokeWidth={2.5} fill="url(#gradGreen)" name="Altas" dot={{ r: 4, fill: "#10b981", stroke: "#fff", strokeWidth: 2 }} activeDot={{ r: 6, stroke: "#10b981", strokeWidth: 2, fill: "#fff" }} />
           </AreaChart>
         </ResponsiveContainer>
@@ -193,10 +199,10 @@ export default function ChartsSection({ data }: ChartsProps) {
                 <stop offset="100%" stopColor="#34d399" />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
+
             <XAxis dataKey="name" tick={axisStyle} axisLine={false} tickLine={false} />
             <YAxis tick={axisStyle} axisLine={false} tickLine={false} />
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip content={<CustomTooltip />} cursor={{ fill: "hsl(var(--muted) / 0.4)" }} />
             <Bar dataKey="entradas" fill="url(#gradEntradas)" radius={[6, 6, 0, 0]} name="Entradas" />
             <Bar dataKey="saidas" fill="url(#gradSaidas)" radius={[6, 6, 0, 0]} name="Saídas" />
           </BarChart>
@@ -211,7 +217,7 @@ export default function ChartsSection({ data }: ChartsProps) {
               {tipoInt.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
             </Pie>
             <Tooltip content={<PieTooltip />} />
-            <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
+            <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, color: axisStyle.fill }} />
           </PieChart>
         </ResponsiveContainer>
       </ChartCard>
@@ -226,10 +232,10 @@ export default function ChartsSection({ data }: ChartsProps) {
                 <stop offset="100%" stopColor="#a78bfa" />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} horizontal={false} />
+
             <XAxis type="number" tick={axisStyle} axisLine={false} tickLine={false} />
             <YAxis dataKey="name" type="category" width={150} tick={axisStyle} axisLine={false} tickLine={false} />
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip content={<CustomTooltip />} cursor={{ fill: "hsl(var(--muted) / 0.4)" }} />
             <Bar dataKey="value" fill="url(#gradPurple)" radius={[0, 8, 8, 0]} name="Quantidade" barSize={24} />
           </BarChart>
         </ResponsiveContainer>
@@ -245,10 +251,10 @@ export default function ChartsSection({ data }: ChartsProps) {
                 <stop offset="100%" stopColor="#22d3ee" />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} horizontal={false} />
+
             <XAxis type="number" tick={axisStyle} axisLine={false} tickLine={false} />
             <YAxis dataKey="name" type="category" width={150} tick={axisStyle} axisLine={false} tickLine={false} />
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip content={<CustomTooltip />} cursor={{ fill: "hsl(var(--muted) / 0.4)" }} />
             <Bar dataKey="value" fill="url(#gradCyan)" radius={[0, 8, 8, 0]} name="Internações" barSize={20} />
           </BarChart>
         </ResponsiveContainer>
@@ -264,10 +270,10 @@ export default function ChartsSection({ data }: ChartsProps) {
                 <stop offset="100%" stopColor="#fbbf24" />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} horizontal={false} />
+
             <XAxis type="number" tick={axisStyle} axisLine={false} tickLine={false} />
             <YAxis dataKey="name" type="category" width={200} tick={{ ...axisStyle, fontSize: 10 }} axisLine={false} tickLine={false} />
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip content={<CustomTooltip />} cursor={{ fill: "hsl(var(--muted) / 0.4)" }} />
             <Bar dataKey="value" fill="url(#gradAmber)" radius={[0, 8, 8, 0]} name="Registros" barSize={18} />
           </BarChart>
         </ResponsiveContainer>
@@ -283,10 +289,9 @@ export default function ChartsSection({ data }: ChartsProps) {
                 <stop offset="100%" stopColor="#818cf8" />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
             <XAxis dataKey="name" tick={{ ...axisStyle, fontSize: 9 }} axisLine={false} tickLine={false} />
             <YAxis tick={axisStyle} axisLine={false} tickLine={false} />
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip content={<CustomTooltip />} cursor={{ fill: "hsl(var(--muted) / 0.4)" }} />
             <Bar dataKey="value" fill="url(#gradIndigo)" radius={[8, 8, 0, 0]} name="Internações" />
           </BarChart>
         </ResponsiveContainer>
@@ -301,7 +306,7 @@ export default function ChartsSection({ data }: ChartsProps) {
               <DonutCenter data={menorData} label="total" />
             </Pie>
             <Tooltip content={<PieTooltip />} />
-            <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
+            <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, color: axisStyle.fill }} />
           </PieChart>
         </ResponsiveContainer>
       </ChartCard>
@@ -316,28 +321,55 @@ export default function ChartsSection({ data }: ChartsProps) {
               <DonutCenter data={reinternData} label="pacientes" />
             </Pie>
             <Tooltip content={<PieTooltip />} />
-            <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
+            <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, color: axisStyle.fill }} />
           </PieChart>
         </ResponsiveContainer>
       </ChartCard>
 
-      {/* Ranking permanências with individual colored bars */}
-      <ChartCard title="Ranking de Maiores Permanências" subtitle="Top 10 pacientes com mais dias internados" className="lg:col-span-2">
-        <ResponsiveContainer>
-          <BarChart data={topPerm} layout="vertical" barCategoryGap="14%">
-            <defs>
-              <linearGradient id="gradRed" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stopColor="#ef4444" />
-                <stop offset="100%" stopColor="#f87171" />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} horizontal={false} />
-            <XAxis type="number" tick={axisStyle} axisLine={false} tickLine={false} label={{ value: "dias", position: "insideBottomRight", style: { fontSize: 10, fill: "hsl(215 10% 50%)" } }} />
-            <YAxis dataKey="name" type="category" width={170} tick={{ ...axisStyle, fontSize: 11 }} axisLine={false} tickLine={false} />
-            <Tooltip content={<CustomTooltip />} />
-            <Bar dataKey="value" fill="url(#gradRed)" radius={[0, 10, 10, 0]} name="Dias" barSize={22} />
-          </BarChart>
-        </ResponsiveContainer>
+      {/* Ranking permanências — custom HTML list for full name visibility */}
+      <ChartCard title="Ranking de Maiores Permanências" subtitle="Top 10 pacientes com mais dias internados" className="lg:col-span-2" heightClass="h-auto">
+        <div className="space-y-1">
+          {topPerm.map((item, idx) => {
+            const max = topPerm[0]?.value || 1;
+            const pct = Math.min(100, (item.value / max) * 100);
+            const total = topPerm.length;
+            // warm → cold: red(0°) → teal(180°)
+            const hue = Math.round((idx / Math.max(total - 1, 1)) * 180);
+            const clr = `hsl(${hue}, 72%, 55%)`;
+            const clrEnd = `hsl(${Math.min(hue + 25, 200)}, 72%, 62%)`;
+            const glow = `0 0 12px hsl(${hue} 72% 55% / 0.35)`;
+            return (
+              <div key={idx} className="rounded-xl px-4 py-3 transition-colors hover:bg-muted/40">
+                {/* Row: position + name + badge */}
+                <div className="flex items-start gap-3">
+                  {/* Position badge */}
+                  <span
+                    className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-extrabold text-white shadow-sm mt-0.5"
+                    style={{ background: `linear-gradient(135deg, ${clr}, ${clrEnd})`, boxShadow: glow }}
+                  >
+                    {idx + 1}
+                  </span>
+                  {/* Name — no truncation, full wrap allowed */}
+                  <p className="flex-1 text-[13px] font-semibold text-foreground leading-snug pt-1 break-words">
+                    {item.name}
+                  </p>
+                  {/* Days value */}
+                  <span className="shrink-0 text-sm font-black tabular-nums pt-1" style={{ color: clr }}>
+                    {item.value}
+                    <span className="text-[10px] font-medium opacity-60 ml-1">dias</span>
+                  </span>
+                </div>
+                {/* Progress bar */}
+                <div className="mt-2 ml-10 h-1.5 rounded-full bg-muted/50 overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-700 ease-out"
+                    style={{ width: `${pct}%`, background: `linear-gradient(to right, ${clr}, ${clrEnd})`, boxShadow: glow }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </ChartCard>
     </div>
   );

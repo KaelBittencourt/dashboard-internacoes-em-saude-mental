@@ -36,6 +36,13 @@ export default {
           teal: "hsl(var(--kpi-teal))",
           indigo: "hsl(var(--kpi-indigo))",
           pink: "hsl(var(--kpi-pink))",
+          emerald: "hsl(var(--kpi-emerald))",
+          orange: "hsl(var(--kpi-orange))",
+          cyan: "hsl(var(--kpi-cyan))",
+          rose: "hsl(var(--kpi-rose))",
+          violet: "hsl(var(--kpi-violet))",
+          lime: "hsl(var(--kpi-lime))",
+          sky: "hsl(var(--kpi-sky))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",

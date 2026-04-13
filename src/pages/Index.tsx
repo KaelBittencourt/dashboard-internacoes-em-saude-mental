@@ -10,7 +10,8 @@ import ChartsSection from "@/components/ChartsSection";
 import QualitySection from "@/components/QualitySection";
 import DataTable from "@/components/DataTable";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Activity } from "lucide-react";
+import { RefreshCw, Brain } from "lucide-react";
+import ThemeToggle from "@/components/ThemeToggle";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -59,7 +60,7 @@ export default function Index() {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 animate-fade-in">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-              <Activity className="w-5 h-5 text-primary-foreground" />
+              <Brain className="w-5 h-5 text-primary-foreground" />
             </div>
             <div>
               <h1 className="text-xl font-bold text-foreground">Internações em Saúde Mental</h1>
@@ -69,9 +70,9 @@ export default function Index() {
               </p>
             </div>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => setFilters(defaultFilters)}>Limpar filtros</Button>
-            <Button size="sm" onClick={loadData} disabled={loading}>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Button size="sm" onClick={() => window.location.reload()} disabled={loading}>
               <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />
               Atualizar dados
             </Button>

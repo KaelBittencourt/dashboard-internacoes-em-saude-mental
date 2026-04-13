@@ -1,8 +1,8 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 @layer base {
   :root {
@@ -12,29 +12,43 @@
     --card-foreground: 215 25% 15%;
     --popover: 0 0% 100%;
     --popover-foreground: 215 25% 15%;
-    --primary: 210 90% 45%;
+    --primary: 210 100% 56%;
     --primary-foreground: 0 0% 100%;
     --secondary: 210 15% 93%;
     --secondary-foreground: 215 25% 25%;
     --muted: 210 15% 95%;
     --muted-foreground: 215 10% 50%;
-    --accent: 170 60% 42%;
+    --accent: 172 66% 50%;
     --accent-foreground: 0 0% 100%;
-    --destructive: 0 72% 55%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
     --border: 214 20% 90%;
     --input: 214 20% 90%;
-    --ring: 210 90% 45%;
+    --ring: 210 100% 56%;
     --radius: 0.75rem;
 
-    --kpi-blue: 210 90% 45%;
-    --kpi-green: 160 60% 40%;
+    --chart-blue: 210 100% 56%;
+    --chart-teal: 172 66% 50%;
+    --chart-orange: 28 100% 55%;
+    --chart-purple: 265 85% 65%;
+    --chart-rose: 350 80% 60%;
+    --chart-green: 142 70% 50%;
+
+    --kpi-blue: 210 100% 50%;
+    --kpi-green: 152 70% 42%;
     --kpi-amber: 38 92% 50%;
-    --kpi-red: 0 72% 55%;
-    --kpi-purple: 270 60% 55%;
-    --kpi-teal: 180 55% 40%;
-    --kpi-indigo: 235 60% 55%;
-    --kpi-pink: 330 65% 55%;
+    --kpi-red: 0 72% 51%;
+    --kpi-purple: 265 85% 58%;
+    --kpi-teal: 180 65% 42%;
+    --kpi-indigo: 235 70% 55%;
+    --kpi-pink: 330 75% 55%;
+    --kpi-emerald: 160 84% 39%;
+    --kpi-orange: 25 95% 53%;
+    --kpi-cyan: 192 91% 44%;
+    --kpi-rose: 350 80% 50%;
+    --kpi-violet: 280 68% 55%;
+    --kpi-lime: 85 70% 42%;
+    --kpi-sky: 200 95% 48%;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -45,15 +59,74 @@
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
+
+  .dark {
+    --background: 220 20% 7%;
+    --foreground: 213 31% 91%;
+    --card: 220 18% 10%;
+    --card-foreground: 213 31% 91%;
+    --popover: 220 18% 12%;
+    --popover-foreground: 213 31% 91%;
+    --primary: 210 100% 56%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 15% 16%;
+    --secondary-foreground: 213 31% 91%;
+    --muted: 220 15% 14%;
+    --muted-foreground: 215 15% 60%;
+    --accent: 172 66% 50%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 15% 18%;
+    --input: 220 15% 18%;
+    --ring: 210 100% 56%;
+
+    --chart-blue: 210 100% 62%;
+    --chart-teal: 172 66% 55%;
+    --chart-orange: 28 100% 62%;
+    --chart-purple: 265 85% 70%;
+    --chart-rose: 350 80% 65%;
+    --chart-green: 142 70% 55%;
+
+    --kpi-blue: 210 100% 60%;
+    --kpi-green: 152 70% 50%;
+    --kpi-amber: 38 92% 58%;
+    --kpi-red: 0 72% 60%;
+    --kpi-purple: 265 85% 65%;
+    --kpi-teal: 180 65% 50%;
+    --kpi-indigo: 235 70% 65%;
+    --kpi-pink: 330 75% 62%;
+    --kpi-emerald: 160 84% 48%;
+    --kpi-orange: 25 95% 60%;
+    --kpi-cyan: 192 91% 52%;
+    --kpi-rose: 350 80% 58%;
+    --kpi-violet: 280 68% 62%;
+    --kpi-lime: 85 70% 50%;
+    --kpi-sky: 200 95% 55%;
+
+    --sidebar-background: 220 20% 7%;
+    --sidebar-foreground: 213 31% 91%;
+    --sidebar-primary: 210 100% 56%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 15% 14%;
+    --sidebar-accent-foreground: 213 31% 91%;
+    --sidebar-border: 220 15% 18%;
+    --sidebar-ring: 210 100% 56%;
+  }
 }
 
 @layer base {
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Inter', sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif;
   }
 }
 
@@ -61,9 +134,11 @@
   .kpi-card {
     @apply bg-card rounded-xl border p-5 shadow-sm transition-all duration-200 hover:shadow-md;
   }
+
   .section-title {
     @apply text-lg font-semibold text-foreground;
   }
+
   .chart-container {
     @apply bg-card rounded-xl border p-5 shadow-sm;
   }

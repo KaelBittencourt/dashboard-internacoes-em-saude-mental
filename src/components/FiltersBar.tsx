@@ -64,7 +64,7 @@ function FilterSelect({ label, value, onChange, options }: { label: string; valu
         <SelectValue placeholder={label} />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="all">Todos</SelectItem>
+        <SelectItem value="all">{label}</SelectItem>
         {options.map((o) => (
           <SelectItem key={o} value={o}>{o}</SelectItem>
         ))}
