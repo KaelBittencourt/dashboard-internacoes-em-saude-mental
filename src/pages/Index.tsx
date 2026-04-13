@@ -89,7 +89,7 @@ export default function Index() {
         <KpiGrid metrics={metrics} />
         <ChartsSection data={filtered} />
         <QualitySection data={filtered} />
-        <DataTable data={filtered} allData={allData} />
+        <DataTable data={filtered} allData={allData} onDataChanged={loadData} />
       </div>
     </div>
   );
