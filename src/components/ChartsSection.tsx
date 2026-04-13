@@ -1,10 +1,23 @@
 import { ProcessedRecord } from "@/lib/types";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend, LineChart, Line
+  PieChart, Pie, Cell, LineChart, Line, Area, AreaChart, RadialBarChart, RadialBar, Legend,
 } from "recharts";
 
-const COLORS = ["#2563eb", "#16a34a", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#ec4899", "#84cc16", "#f97316", "#6366f1"];
+const PALETTE = [
+  "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6",
+  "#06b6d4", "#ec4899", "#84cc16", "#f97316", "#6366f1",
+];
+
+const GRADIENT_PAIRS = [
+  ["#3b82f6", "#60a5fa"],
+  ["#10b981", "#34d399"],
+  ["#8b5cf6", "#a78bfa"],
+  ["#06b6d4", "#22d3ee"],
+  ["#f59e0b", "#fbbf24"],
+  ["#ef4444", "#f87171"],
+  ["#ec4899", "#f472b6"],
+];
 
 interface ChartsProps {
   data: ProcessedRecord[];
@@ -30,21 +43,67 @@ function sortByMonth(data: { name: string; value: number }[]) {
   });
 }
 
-function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
+// Modern custom tooltip
+function CustomTooltip({ active, payload, label }: any) {
+  if (!active || !payload?.length) return null;
   return (
-    <div className="chart-container animate-fade-in">
-      <h3 className="section-title mb-4">{title}</h3>
+    <div className="bg-foreground/90 backdrop-blur-sm text-primary-foreground rounded-lg px-4 py-2.5 shadow-xl border-0 text-xs">
+      <p className="font-semibold mb-1 opacity-80">{label}</p>
+      {payload.map((p: any, i: number) => (
+        <div key={i} className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full" style={{ background: p.color }} />
+          <span className="opacity-80">{p.name}:</span>
+          <span className="font-bold">{p.value}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function PieTooltip({ active, payload }: any) {
+  if (!active || !payload?.length) return null;
+  const d = payload[0];
+  return (
+    <div className="bg-foreground/90 backdrop-blur-sm text-primary-foreground rounded-lg px-4 py-2.5 shadow-xl text-xs">
+      <div className="flex items-center gap-2">
+        <span className="w-2.5 h-2.5 rounded-full" style={{ background: d.payload.fill }} />
+        <span className="font-semibold">{d.name}</span>
+      </div>
+      <p className="mt-1"><span className="font-bold text-sm">{d.value}</span> <span className="opacity-70">({((d.payload.percent || 0) * 100).toFixed(1)}%)</span></p>
+    </div>
+  );
+}
+
+// Modern donut with center label
+function DonutCenter({ data, label }: { data: { name: string; value: number }[]; label: string }) {
+  const total = data.reduce((s, d) => s + d.value, 0);
+  return (
+    <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle">
+      <tspan x="50%" dy="-8" className="fill-foreground text-2xl font-bold">{total}</tspan>
+      <tspan x="50%" dy="20" className="fill-muted-foreground text-[10px]">{label}</tspan>
+    </text>
+  );
+}
+
+function ChartCard({ title, subtitle, children, className = "" }: { title: string; subtitle?: string; children: React.ReactNode; className?: string }) {
+  return (
+    <div className={`bg-card rounded-2xl border border-border/60 p-6 shadow-sm hover:shadow-md transition-all duration-300 animate-fade-in ${className}`}>
+      <div className="mb-5">
+        <h3 className="text-sm font-semibold text-foreground tracking-tight">{title}</h3>
+        {subtitle && <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>}
+      </div>
       <div className="h-72">{children}</div>
     </div>
   );
 }
 
+const gridStroke = "hsl(214 20% 92%)";
+const axisStyle = { fontSize: 11, fill: "hsl(215 10% 50%)" };
+
 export default function ChartsSection({ data }: ChartsProps) {
-  // a) Evolução mensal entradas
   const entrMensal = sortByMonth(countBy(data, (d) => d.mesEntrada));
-  // b) Evolução mensal altas
   const altasMensal = sortByMonth(countBy(data.filter(d => d.statusInternacao === "Encerrada"), (d) => d.mesSaida));
-  // c) Entradas x saídas
+
   const meses = new Set<string>();
   data.forEach(d => { if (d.mesEntrada !== "Não informado") meses.add(d.mesEntrada); if (d.mesSaida !== "Não informado") meses.add(d.mesSaida); });
   const entradasMap = new Map<string, number>();
@@ -54,96 +113,230 @@ export default function ChartsSection({ data }: ChartsProps) {
   const entSai = sortByMonth([...meses].map(m => ({ name: m, value: 0 }))).map(m => ({
     name: m.name, entradas: entradasMap.get(m.name) || 0, saidas: saidasMap.get(m.name) || 0
   }));
-  // d) Tipo internação
+
   const tipoInt = countBy(data, d => d.tipoInternacao);
-  // e) Tipo alta
   const tipoAlta = countBy(data.filter(d => d.statusInternacao === "Encerrada"), d => d.tipoAlta);
-  // f) Top 10 cidades
   const topCidades = countBy(data, d => d.cidadeFinal).slice(0, 10);
-  // g) Top 10 CIDs
   const topCids = countBy(data, d => d.cid).slice(0, 10);
-  // h) Faixa permanência
+
   const faixas = countBy(data, d => d.faixaPermanencia);
   const faixaOrder = ["0 a 7 dias", "8 a 15 dias", "16 a 30 dias", "31 a 60 dias", "Acima de 60 dias"];
   const faixasSorted = faixaOrder.map(f => faixas.find(x => x.name === f) || { name: f, value: 0 });
-  // i) Menor de idade
+
   const menorData = countBy(data, d => d.menorIdade.toUpperCase() === "SIM" ? "Sim" : d.menorIdade.toUpperCase() === "NÃO" ? "Não" : "Não informado");
-  // j) Reinternação
   const reinternData = [
-    { name: "1 internação", value: data.filter(d => !d.reinternacao).length },
-    { name: "2+ internações", value: data.filter(d => d.reinternacao).length },
+    { name: "Única", value: data.filter(d => !d.reinternacao).length },
+    { name: "Reinternação", value: data.filter(d => d.reinternacao).length },
   ];
-  // k) Maiores permanências
-  const topPerm = [...data].sort((a, b) => b.permanenciaDias - a.permanenciaDias).slice(0, 10).map(d => ({
-    name: d.paciente.length > 20 ? d.paciente.slice(0, 20) + "…" : d.paciente,
+
+  const topPerm = [...data].sort((a, b) => b.permanenciaDias - a.permanenciaDias).slice(0, 10).map((d, i) => ({
+    name: d.paciente.length > 22 ? d.paciente.slice(0, 22) + "…" : d.paciente,
     value: d.permanenciaDias,
+    fill: GRADIENT_PAIRS[i % GRADIENT_PAIRS.length][0],
   }));
 
+  // For horizontal bars with gradient fills
+  const topCidadesColored = topCidades.map((d, i) => ({ ...d, fill: PALETTE[i % PALETTE.length] }));
+  const topCidsColored = topCids.map((d, i) => ({ ...d, fill: PALETTE[i % PALETTE.length] }));
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <ChartCard title="Evolução Mensal de Internações">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      {/* Area chart for monthly evolution */}
+      <ChartCard title="Evolução Mensal de Internações" subtitle="Tendência de novos registros ao longo do tempo">
         <ResponsiveContainer>
-          <LineChart data={entrMensal}><CartesianGrid strokeDasharray="3 3" stroke="hsl(214 20% 90%)" /><XAxis dataKey="name" tick={{ fontSize: 11 }} /><YAxis tick={{ fontSize: 11 }} /><Tooltip /><Line type="monotone" dataKey="value" stroke="#2563eb" strokeWidth={2} name="Internações" /></LineChart>
+          <AreaChart data={entrMensal}>
+            <defs>
+              <linearGradient id="gradBlue" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.3} />
+                <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.02} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
+            <XAxis dataKey="name" tick={axisStyle} axisLine={false} tickLine={false} />
+            <YAxis tick={axisStyle} axisLine={false} tickLine={false} />
+            <Tooltip content={<CustomTooltip />} />
+            <Area type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={2.5} fill="url(#gradBlue)" name="Internações" dot={{ r: 4, fill: "#3b82f6", stroke: "#fff", strokeWidth: 2 }} activeDot={{ r: 6, stroke: "#3b82f6", strokeWidth: 2, fill: "#fff" }} />
+          </AreaChart>
         </ResponsiveContainer>
       </ChartCard>
 
-      <ChartCard title="Evolução Mensal de Altas">
+      {/* Area chart for monthly discharges */}
+      <ChartCard title="Evolução Mensal de Altas" subtitle="Volume de altas registradas por mês">
         <ResponsiveContainer>
-          <BarChart data={altasMensal}><CartesianGrid strokeDasharray="3 3" stroke="hsl(214 20% 90%)" /><XAxis dataKey="name" tick={{ fontSize: 11 }} /><YAxis tick={{ fontSize: 11 }} /><Tooltip /><Bar dataKey="value" fill="#16a34a" radius={[4,4,0,0]} name="Altas" /></BarChart>
+          <AreaChart data={altasMensal}>
+            <defs>
+              <linearGradient id="gradGreen" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#10b981" stopOpacity={0.3} />
+                <stop offset="100%" stopColor="#10b981" stopOpacity={0.02} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
+            <XAxis dataKey="name" tick={axisStyle} axisLine={false} tickLine={false} />
+            <YAxis tick={axisStyle} axisLine={false} tickLine={false} />
+            <Tooltip content={<CustomTooltip />} />
+            <Area type="monotone" dataKey="value" stroke="#10b981" strokeWidth={2.5} fill="url(#gradGreen)" name="Altas" dot={{ r: 4, fill: "#10b981", stroke: "#fff", strokeWidth: 2 }} activeDot={{ r: 6, stroke: "#10b981", strokeWidth: 2, fill: "#fff" }} />
+          </AreaChart>
         </ResponsiveContainer>
       </ChartCard>
 
-      <ChartCard title="Entradas x Saídas por Mês">
+      {/* Grouped bars with rounded corners */}
+      <ChartCard title="Entradas x Saídas por Mês" subtitle="Comparativo mensal de fluxo de pacientes">
         <ResponsiveContainer>
-          <BarChart data={entSai}><CartesianGrid strokeDasharray="3 3" stroke="hsl(214 20% 90%)" /><XAxis dataKey="name" tick={{ fontSize: 11 }} /><YAxis tick={{ fontSize: 11 }} /><Tooltip /><Bar dataKey="entradas" fill="#2563eb" radius={[4,4,0,0]} name="Entradas" /><Bar dataKey="saidas" fill="#16a34a" radius={[4,4,0,0]} name="Saídas" /></BarChart>
+          <BarChart data={entSai} barGap={2} barCategoryGap="20%">
+            <defs>
+              <linearGradient id="gradEntradas" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#3b82f6" />
+                <stop offset="100%" stopColor="#60a5fa" />
+              </linearGradient>
+              <linearGradient id="gradSaidas" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#10b981" />
+                <stop offset="100%" stopColor="#34d399" />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
+            <XAxis dataKey="name" tick={axisStyle} axisLine={false} tickLine={false} />
+            <YAxis tick={axisStyle} axisLine={false} tickLine={false} />
+            <Tooltip content={<CustomTooltip />} />
+            <Bar dataKey="entradas" fill="url(#gradEntradas)" radius={[6, 6, 0, 0]} name="Entradas" />
+            <Bar dataKey="saidas" fill="url(#gradSaidas)" radius={[6, 6, 0, 0]} name="Saídas" />
+          </BarChart>
         </ResponsiveContainer>
       </ChartCard>
 
-      <ChartCard title="Distribuição por Tipo de Internação">
+      {/* Modern donut for tipo internação */}
+      <ChartCard title="Tipo de Internação" subtitle="Distribuição por modalidade de internação">
         <ResponsiveContainer>
-          <PieChart><Pie data={tipoInt} cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={3} dataKey="value" label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`} labelLine={false} fontSize={11}>{tipoInt.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}</Pie><Tooltip /></PieChart>
+          <PieChart>
+            <Pie data={tipoInt} cx="50%" cy="50%" innerRadius={70} outerRadius={105} paddingAngle={4} dataKey="value" cornerRadius={6} stroke="none">
+              {tipoInt.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
+            </Pie>
+            <Tooltip content={<PieTooltip />} />
+            <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
+          </PieChart>
         </ResponsiveContainer>
       </ChartCard>
 
-      <ChartCard title="Distribuição por Tipo de Alta">
+      {/* Horizontal gradient bars for tipo alta */}
+      <ChartCard title="Tipo de Alta" subtitle="Distribuição das modalidades de alta">
         <ResponsiveContainer>
-          <BarChart data={tipoAlta} layout="vertical"><CartesianGrid strokeDasharray="3 3" stroke="hsl(214 20% 90%)" /><XAxis type="number" tick={{ fontSize: 11 }} /><YAxis dataKey="name" type="category" width={150} tick={{ fontSize: 11 }} /><Tooltip /><Bar dataKey="value" fill="#8b5cf6" radius={[0,4,4,0]} name="Qtd" /></BarChart>
+          <BarChart data={tipoAlta} layout="vertical" barCategoryGap="16%">
+            <defs>
+              <linearGradient id="gradPurple" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="#8b5cf6" />
+                <stop offset="100%" stopColor="#a78bfa" />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} horizontal={false} />
+            <XAxis type="number" tick={axisStyle} axisLine={false} tickLine={false} />
+            <YAxis dataKey="name" type="category" width={150} tick={axisStyle} axisLine={false} tickLine={false} />
+            <Tooltip content={<CustomTooltip />} />
+            <Bar dataKey="value" fill="url(#gradPurple)" radius={[0, 8, 8, 0]} name="Quantidade" barSize={24} />
+          </BarChart>
         </ResponsiveContainer>
       </ChartCard>
 
-      <ChartCard title="Top 10 Cidades de Origem">
+      {/* Colored horizontal bars for cidades */}
+      <ChartCard title="Top 10 Cidades de Origem" subtitle="Cidades com maior volume de internações">
         <ResponsiveContainer>
-          <BarChart data={topCidades} layout="vertical"><CartesianGrid strokeDasharray="3 3" stroke="hsl(214 20% 90%)" /><XAxis type="number" tick={{ fontSize: 11 }} /><YAxis dataKey="name" type="category" width={150} tick={{ fontSize: 11 }} /><Tooltip /><Bar dataKey="value" fill="#06b6d4" radius={[0,4,4,0]} name="Qtd" /></BarChart>
+          <BarChart data={topCidadesColored} layout="vertical" barCategoryGap="12%">
+            <defs>
+              <linearGradient id="gradCyan" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="#06b6d4" />
+                <stop offset="100%" stopColor="#22d3ee" />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} horizontal={false} />
+            <XAxis type="number" tick={axisStyle} axisLine={false} tickLine={false} />
+            <YAxis dataKey="name" type="category" width={150} tick={axisStyle} axisLine={false} tickLine={false} />
+            <Tooltip content={<CustomTooltip />} />
+            <Bar dataKey="value" fill="url(#gradCyan)" radius={[0, 8, 8, 0]} name="Internações" barSize={20} />
+          </BarChart>
         </ResponsiveContainer>
       </ChartCard>
 
-      <ChartCard title="Top 10 CIDs">
+      {/* Colored horizontal bars for CIDs */}
+      <ChartCard title="Top 10 CIDs" subtitle="Diagnósticos mais frequentes">
         <ResponsiveContainer>
-          <BarChart data={topCids} layout="vertical"><CartesianGrid strokeDasharray="3 3" stroke="hsl(214 20% 90%)" /><XAxis type="number" tick={{ fontSize: 11 }} /><YAxis dataKey="name" type="category" width={200} tick={{ fontSize: 10 }} /><Tooltip /><Bar dataKey="value" fill="#f59e0b" radius={[0,4,4,0]} name="Qtd" /></BarChart>
+          <BarChart data={topCidsColored} layout="vertical" barCategoryGap="12%">
+            <defs>
+              <linearGradient id="gradAmber" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="#f59e0b" />
+                <stop offset="100%" stopColor="#fbbf24" />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} horizontal={false} />
+            <XAxis type="number" tick={axisStyle} axisLine={false} tickLine={false} />
+            <YAxis dataKey="name" type="category" width={200} tick={{ ...axisStyle, fontSize: 10 }} axisLine={false} tickLine={false} />
+            <Tooltip content={<CustomTooltip />} />
+            <Bar dataKey="value" fill="url(#gradAmber)" radius={[0, 8, 8, 0]} name="Registros" barSize={18} />
+          </BarChart>
         </ResponsiveContainer>
       </ChartCard>
 
-      <ChartCard title="Distribuição por Faixa de Permanência">
+      {/* Faixa permanência with gradient bars */}
+      <ChartCard title="Faixa de Permanência" subtitle="Distribuição do tempo de internação">
         <ResponsiveContainer>
-          <BarChart data={faixasSorted}><CartesianGrid strokeDasharray="3 3" stroke="hsl(214 20% 90%)" /><XAxis dataKey="name" tick={{ fontSize: 10 }} /><YAxis tick={{ fontSize: 11 }} /><Tooltip /><Bar dataKey="value" fill="#2563eb" radius={[4,4,0,0]} name="Qtd" /></BarChart>
+          <BarChart data={faixasSorted} barCategoryGap="20%">
+            <defs>
+              <linearGradient id="gradIndigo" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#6366f1" />
+                <stop offset="100%" stopColor="#818cf8" />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
+            <XAxis dataKey="name" tick={{ ...axisStyle, fontSize: 9 }} axisLine={false} tickLine={false} />
+            <YAxis tick={axisStyle} axisLine={false} tickLine={false} />
+            <Tooltip content={<CustomTooltip />} />
+            <Bar dataKey="value" fill="url(#gradIndigo)" radius={[8, 8, 0, 0]} name="Internações" />
+          </BarChart>
         </ResponsiveContainer>
       </ChartCard>
 
-      <ChartCard title="Menor de Idade">
+      {/* Menor de idade - modern donut */}
+      <ChartCard title="Menor de Idade" subtitle="Proporção de pacientes menores">
         <ResponsiveContainer>
-          <PieChart><Pie data={menorData} cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={3} dataKey="value" label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`} fontSize={12}>{menorData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}</Pie><Tooltip /></PieChart>
+          <PieChart>
+            <Pie data={menorData} cx="50%" cy="50%" innerRadius={70} outerRadius={105} paddingAngle={4} dataKey="value" cornerRadius={6} stroke="none">
+              {menorData.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
+              <DonutCenter data={menorData} label="total" />
+            </Pie>
+            <Tooltip content={<PieTooltip />} />
+            <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
+          </PieChart>
         </ResponsiveContainer>
       </ChartCard>
 
-      <ChartCard title="Reinternação">
+      {/* Reinternação - modern donut */}
+      <ChartCard title="Reinternação" subtitle="Pacientes com múltiplas internações">
         <ResponsiveContainer>
-          <PieChart><Pie data={reinternData} cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={3} dataKey="value" label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`} fontSize={12}>{reinternData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}</Pie><Tooltip /></PieChart>
+          <PieChart>
+            <Pie data={reinternData} cx="50%" cy="50%" innerRadius={70} outerRadius={105} paddingAngle={4} dataKey="value" cornerRadius={6} stroke="none">
+              <Cell fill="#3b82f6" />
+              <Cell fill="#f59e0b" />
+              <DonutCenter data={reinternData} label="pacientes" />
+            </Pie>
+            <Tooltip content={<PieTooltip />} />
+            <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
+          </PieChart>
         </ResponsiveContainer>
       </ChartCard>
 
-      <ChartCard title="Ranking de Maiores Permanências">
+      {/* Ranking permanências with individual colored bars */}
+      <ChartCard title="Ranking de Maiores Permanências" subtitle="Top 10 pacientes com mais dias internados" className="lg:col-span-2">
         <ResponsiveContainer>
-          <BarChart data={topPerm} layout="vertical"><CartesianGrid strokeDasharray="3 3" stroke="hsl(214 20% 90%)" /><XAxis type="number" tick={{ fontSize: 11 }} /><YAxis dataKey="name" type="category" width={160} tick={{ fontSize: 10 }} /><Tooltip /><Bar dataKey="value" fill="#ef4444" radius={[0,4,4,0]} name="Dias" /></BarChart>
+          <BarChart data={topPerm} layout="vertical" barCategoryGap="14%">
+            <defs>
+              <linearGradient id="gradRed" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="#ef4444" />
+                <stop offset="100%" stopColor="#f87171" />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} horizontal={false} />
+            <XAxis type="number" tick={axisStyle} axisLine={false} tickLine={false} label={{ value: "dias", position: "insideBottomRight", style: { fontSize: 10, fill: "hsl(215 10% 50%)" } }} />
+            <YAxis dataKey="name" type="category" width={170} tick={{ ...axisStyle, fontSize: 11 }} axisLine={false} tickLine={false} />
+            <Tooltip content={<CustomTooltip />} />
+            <Bar dataKey="value" fill="url(#gradRed)" radius={[0, 10, 10, 0]} name="Dias" barSize={22} />
+          </BarChart>
         </ResponsiveContainer>
       </ChartCard>
     </div>
